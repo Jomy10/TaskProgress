@@ -1,0 +1,15 @@
+{
+  "originHash" : "65b456d8c15268f442735670e4921dec3ebec7516b9ff49d95a14f12e473e476",
+  "pins" : [
+    {
+      "identity" : "swift-backtrace",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swift-server/swift-backtrace.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "f01e3400ae083e9c28be5c86f53d7b7b0b0478da"
+      }
+    }
+  ],
+  "version" : 3
+}
