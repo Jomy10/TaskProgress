@@ -1,5 +1,4 @@
 import TaskProgress
-import SwiftCurses
 
 if #available(macOS 13.0, *) {
   ProgressIndicators.global.show()
