@@ -24,6 +24,7 @@ public struct ProgressFormat {
   let showFinishedTasks: Bool
   let outputWith: Output
   let useColor: Bool
+  let autoClose: Bool
 
   public enum Output {
     /// Print in the current terminal
@@ -37,7 +38,8 @@ public struct ProgressFormat {
   public init(
     showIntermediateMessages: Bool = true,
     showFinishedTasks: Bool = true,
-    outputWith: Output = .ansi
+    outputWith: Output = .ansi,
+    autoClose: Bool = false
   ) {
     self.showIntermediateMessages = showIntermediateMessages
     self.showFinishedTasks = true
@@ -48,6 +50,7 @@ public struct ProgressFormat {
       self.outputWith = .raw
       self.useColor = false
     }
+    self.autoClose = autoClose
   }
 }
 
@@ -71,6 +74,7 @@ public final class ProgressIndicators: @unchecked Sendable {
     }
   }
   private var _finished: Bool = false
+  private var canClose: Bool = false
 
   var _globalMessages: [String] = []
 
@@ -114,14 +118,40 @@ public final class ProgressIndicators: @unchecked Sendable {
     }
   }
 
+  /// When `format.autoClose` is false, this has to be called before the ProgressIndicators will terminate.
+  /// Note that this will not immediately close the indicators. All tasks need to either be done, cancelled
+  /// have an error
+  public func setCanClose() {
+    self.canClose = true
+  }
+
   private func useAnsi() {
     self.lock.withLock {
       self.screenTask = Task.detached(priority: .background) {
         Ansi.hideCursor()
         var prevLineCount = self.printAnsi(updateSpinners: false)
         var time: TimeInterval = ProcessInfo.processInfo.systemUptime
+        var prevWasFinished = false
         while true {
           await Task.yield()
+
+          if self.allFinished {
+            if prevWasFinished && !self.format.autoClose && !self.canClose {
+              continue
+            }
+            Ansi.cursorUp(lines: prevLineCount)
+            prevLineCount = self.printAnsi(updateSpinners: false)
+            Ansi.showCursor()
+            prevWasFinished = true
+            if !self.format.autoClose && !self.canClose {
+              continue
+            }
+            self.finished = true
+            break
+          } else {
+            prevWasFinished = false
+          }
+
           Ansi.cursorUp(lines: prevLineCount)
 
           self.lock.withLock {
@@ -147,13 +177,6 @@ public final class ProgressIndicators: @unchecked Sendable {
             Ansi.cursorUp(lines: linesToClear)
           }
           prevLineCount = newLineCount
-          if self.allFinished {
-            Ansi.cursorUp(lines: prevLineCount)
-            _ = self.printAnsi(updateSpinners: false)
-            self.finished = true
-            Ansi.showCursor()
-            break
-          }
         }
       }
     }
@@ -221,12 +244,16 @@ public final class ProgressIndicators: @unchecked Sendable {
     if self.format.useColor {
       if task.isError {
         print("[\(AnsiCodes.red)ERR\(AnsiCodes.reset)] \(task.description)")
+      } else if task.isCancelled {
+        print("[\(AnsiCodes.yellow)CANCELLED\(AnsiCodes.reset)] \(task.description)")
       } else {
         print("[\(AnsiCodes.green)DONE\(AnsiCodes.reset)] \(task.description)")
       }
     } else {
       if task.isError {
         print("[ERR] \(task.description)")
+      } else if task.isCancelled {
+        print("[CANCELLED] \(task.description)")
       } else {
         print("[DONE] \(task.description)")
       }
@@ -354,8 +381,8 @@ open class ProgressTask: Identifiable {
   open var finished: Bool { self._finished }
   private var _finished: Bool = false
 
-  open var isError: Bool { self._isErr }
-  private var _isErr: Bool = false
+  public private(set) var isError: Bool = false
+  public private(set) var isCancelled: Bool = false
   /// Progress percentage (from 0 to 100) or nil for a generic loading animation
   open var progress: Int? { nil }
   open var spinner: Spinner? { nil }
@@ -390,7 +417,12 @@ open class ProgressTask: Identifiable {
   }
 
   public func setError() {
-    self._isErr = true
+    self.isError = true
+    self.finish()
+  }
+
+  public func cancel() {
+    self.isCancelled = true
     self.finish()
   }
 }
