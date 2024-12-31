@@ -168,7 +168,8 @@ public final class ProgressIndicators: @unchecked Sendable {
       }
       linesPrinted += finishedTasks.count
       for task in finishedTasks {
-        print("[\(AnsiCodes.green)DONE\(AnsiCodes.reset)] \(task.description)\(AnsiCodes.clearToEndOfLine())")
+        //print("[\(AnsiCodes.green)DONE\(AnsiCodes.reset)] \(task.description)\(AnsiCodes.clearToEndOfLine())")
+        self.rawPrintEnd(task: task)
       }
     }
 
@@ -218,9 +219,17 @@ public final class ProgressIndicators: @unchecked Sendable {
 
   func rawPrintEnd(task: borrowing ProgressTask) {
     if self.format.useColor {
-      print("[\(AnsiCodes.green)DONE\(AnsiCodes.reset)] \(task.description)")
+      if task.isError {
+        print("[\(AnsiCodes.red)ERR\(AnsiCodes.reset)] \(task.description)")
+      } else {
+        print("[\(AnsiCodes.green)DONE\(AnsiCodes.reset)] \(task.description)")
+      }
     } else {
-      print("[DONE] \(task.description)")
+      if task.isError {
+        print("[ERR] \(task.description)")
+      } else {
+        print("[DONE] \(task.description)")
+      }
     }
   }
 
@@ -345,6 +354,8 @@ open class ProgressTask: Identifiable {
   open var finished: Bool { self._finished }
   private var _finished: Bool = false
 
+  open var isError: Bool { self._isErr }
+  private var _isErr: Bool = false
   /// Progress percentage (from 0 to 100) or nil for a generic loading animation
   open var progress: Int? { nil }
   open var spinner: Spinner? { nil }
@@ -376,7 +387,12 @@ open class ProgressTask: Identifiable {
      } else {
        self._intermediateMessage = msg
      }
-   }
+  }
+
+  public func setError() {
+    self._isErr = true
+    self.finish()
+  }
 }
 
 public final class SpinnerProgressTask: ProgressTask, @unchecked Sendable {
