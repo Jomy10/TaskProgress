@@ -11,8 +11,14 @@ if #available(macOS 13.0, *) {
     try await Task.sleep(for: .seconds(3))
     let loggingTask = ProgressBarTask("Building module Logging", total: 100)
     ProgressIndicators.global.addTask(loggingTask)
-    for _ in 0..<100 {
+    for i in 0..<100 {
       loggingTask.progress()
+      if i == 90 {
+        loggingTask.setMessage("Almost done...")
+      } else if i == 50 {
+
+        ProgressIndicators.global.globalMessage("We're halfway there")
+      }
       try await Task.sleep(for: .seconds(0.1))
     }
     main.finish()

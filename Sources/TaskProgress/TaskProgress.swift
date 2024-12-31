@@ -72,6 +72,8 @@ public final class ProgressIndicators: @unchecked Sendable {
   }
   private var _finished: Bool = false
 
+  var _globalMessages: [String] = []
+
   private var forceRefresh: Bool
   private var rawOutput: Bool
 
@@ -283,6 +285,14 @@ public final class ProgressIndicators: @unchecked Sendable {
         while true {
           await Task.yield()
           Ansi.cursorUp(lines: prevLineCount)
+
+          self.lock.withLock {
+            for message in self._globalMessages {
+              print(message + AnsiCodes.clearToEndOfLine())
+            }
+            self._globalMessages.removeAll(keepingCapacity: true)
+          }
+
           let newTime = ProcessInfo.processInfo.systemUptime
           let update = newTime - time >= 0.5 // next animation frame every half second
           if update {
@@ -385,7 +395,9 @@ public final class ProgressIndicators: @unchecked Sendable {
   public func globalMessage(_ msg: String) {
     switch (self.format.outputWith) {
       case .ansi:
-        // TODO
+        self.lock.withLock {
+          self._globalMessages.append(msg)
+        }
         break
       case .raw:
         print(msg)
