@@ -107,174 +107,12 @@ public final class ProgressIndicators: @unchecked Sendable {
   /// start showing the indicators
   public func show() {
     switch(self.format.outputWith) {
-      //case .curses:
-      //  self.useCurses()
       case .ansi:
         self.useAnsi()
       case .raw:
         self.usePrint()
     }
   }
-
-  func printAll() {
-    self.lock.withLock {
-      let finishedTasks = self.tasks.filter { $0.finished }
-      let tasks = self.tasks.filter { !$0.finished }
-
-      let done = self.format.useColor ? "\u{001B}[32mDONE\u{001B}[0m" : "DONE"
-      if self.format.showFinishedTasks {
-        for finishedTask in finishedTasks {
-          print("[\(done)] \(finishedTask.description)")
-        }
-      }
-
-      for task in tasks {
-        let indicator: String
-        if let progress = task.progress {
-          indicator = String(progress).padding(toLength: 3, withPad: " ", startingAt: 0)
-        } else if task.spinner != nil {
-          indicator = (task.spinnerIterator.current ?? "...") as! String
-        } else {
-          indicator = "..."
-        }
-        print("[\(indicator)] \(task.description)\(AnsiCodes.clearToEndOfLine())")
-      }
-    }
-  }
-
-  //private func useCurses() {
-  //    let greyPair: ColorPairId = 1
-  //    let greenPair: ColorPairId = 2
-  //
-  //  self.lock.withLock {
-  //    self.screenTask = Task.detached(priority: .background) {
-  //      try! await initScreenAsync { scr in
-  //        try? ColorPair.define(greyPair, fg: 8, bg: Color.black)
-  //        try? ColorPair.define(greenPair, fg: Color.green, bg: Color.black)
-  //        var taskCount = 0
-  //        var finishedTaskCount = 0
-  //        var windowSize = scr.maxYX
-  //        var redraw = true
-  //        var tasks: [ProgressTask] = Array()
-  //        self.lock.withLock { tasks = self.tasks }
-  //        var finishedTasks: [ProgressTask] = []
-  //        var time: TimeInterval = ProcessInfo.processInfo.systemUptime
-  //        while true {
-  //          finishedTasks = self.tasks.filter { $0.finished }
-  //          let newFinishedTaskCount = finishedTasks.count
-  //          if windowSize != scr.maxYX {
-  //            windowSize = scr.maxYX
-  //            redraw = true
-  //          } else if self.tasks.count != taskCount {
-  //            //do {
-  //            //  try scr.move(row: scr.maxYX.row - Int32(taskCount), col: 0)
-  //            //  try scr.clear(until: .endOfScreen)
-  //            //} catch {
-  //            //  scr.clear()
-  //            //}
-  //            self.lock.withLock {
-  //              taskCount = self.tasks.count
-  //              self.lock.withLock { tasks = self.tasks.filter { !$0.finished } }
-  //            }
-  //            redraw = true
-  //          } else if self.forceRefresh {
-  //            self.lock.withLock {
-  //              self.forceRefresh = false
-  //            }
-  //            redraw = true
-  //          } else if newFinishedTaskCount != finishedTaskCount {
-  //            finishedTaskCount = newFinishedTaskCount
-  //            self.lock.withLock { tasks = self.tasks.filter { !$0.finished } }
-  //            redraw = true
-  //          }
-
-  //          let mul = self.format.showIntermediateMessages ? 2 : 1
-  //          // Redraw all
-  //          if redraw {
-  //            scr.clear()
-  //            for (i, task) in tasks.enumerated() {
-  //              let y = windowSize.row - Int32((tasks.count - i) * mul)
-  //              if y < 0 { continue }
-  //              try scr.move(row: y, col: 0)
-  //              try? scr.print("[...] \(task.description)")
-  //            }
-
-  //            if self.format.showFinishedTasks {
-  //              var count = tasks.count
-  //              if self.format.showIntermediateMessages {
-  //                count *= 2
-  //              }
-  //              let base = windowSize.row - Int32(count)
-  //              if base > 0 {
-  //                for (i, task) in finishedTasks.reversed().enumerated() {
-  //                  let y = base - Int32(finishedTaskCount - i)
-  //                  if y < 0 { continue }
-  //                  try scr.move(row: y, col: 0)
-  //                  try scr.print("[")
-  //                  try scr.withAttrs(.colorPair(Int32(greenPair))) {
-  //                    try scr.print("DONE")
-  //                  }
-  //                  try scr.print("] \(task.description)")
-  //                }
-  //              }
-  //            }
-
-  //            redraw = false
-  //          }
-
-  //          // Redraw spinners
-  //          let newTime = ProcessInfo.processInfo.systemUptime
-  //          let update = newTime - time >= 0.5 // next animation frame every half second
-  //          if update {
-  //            time = newTime
-  //          }
-  //          for (i, task) in tasks.enumerated() {
-  //            let y = windowSize.row - Int32((tasks.count - i) * mul)
-  //            if y < 0 { continue }
-  //            let indicator: String
-  //            if let progress = task.progress {
-  //              indicator = String(progress).padding(toLength: 3, withPad: " ", startingAt: 0)
-  //            } else if task.spinner != nil {
-  //              if update {
-  //                indicator = task.spinnerIterator.next()! as! String
-  //              } else {
-  //                indicator = (task.spinnerIterator.current ?? task.spinnerIterator.next()) as! String
-  //              }
-  //            } else {
-  //              indicator = "..."
-  //            }
-  //            try scr.move(row: y, col: 1)
-  //            try scr.print(indicator)
-  //          }
-
-  //          // Redraw intermediate messages
-  //          if self.format.showIntermediateMessages {
-  //            for (i, task) in tasks.enumerated() {
-  //              let y = windowSize.row - Int32((tasks.count - i) * mul)
-  //              if y < 0 { continue }
-  //              if let intermediateMessage = task.intermediateMessage {
-  //                try scr.withAttrs(.colorPair(Int32(greyPair))) {
-  //                  try scr.move(row: y + 1, col: 0)
-  //                  try scr.clear(until: .endOfLine)
-  //                  try scr.move(row: y + 1, col: 0)
-  //                  try? scr.print("\(intermediateMessage)")
-  //                }
-  //              }
-  //            }
-  //          }
-
-  //          scr.refresh()
-  //          if taskCount == finishedTaskCount {
-  //            self.finished = true
-  //            break
-  //          }
-  //          await Task.yield()
-  //        }
-  //      }
-  //      self.printAll()
-  //    }
-  //  }
-  //}
 
   private func useAnsi() {
     self.lock.withLock {
@@ -522,7 +360,10 @@ open class ProgressTask: Identifiable {
     }
   }
 
-  public init() {
+  public init(
+    intermediateMessage: String? = nil
+  ) {
+    self._intermediateMessage = intermediateMessage
     self.useRaw = ProgressIndicators.global.format.outputWith == .raw
     if self.useRaw {
       ProgressIndicators.global.rawPrintStart(task: self)
@@ -540,11 +381,8 @@ open class ProgressTask: Identifiable {
 
 public final class SpinnerProgressTask: ProgressTask, @unchecked Sendable {
   public override var description: String { self._description }
-  public override var intermediateMessage: String? { self._intermediateMessage }
-  //public override var finished: Bool { self._finished }
 
   private let _description: String
-  private var _intermediateMessage: String?
   private let _spinner: Spinner
 
   public override var spinner: Spinner? { self._spinner }
@@ -559,20 +397,17 @@ public final class SpinnerProgressTask: ProgressTask, @unchecked Sendable {
     ])
   ) {
     self._description = description
-    self._intermediateMessage = intermediateMessage
     self._spinner = spinner
-    super.init()
+    super.init(intermediateMessage: intermediateMessage)
   }
 }
 
 public final class ProgressBarTask: ProgressTask, @unchecked Sendable {
   public override var description: String { self._description }
-  public override var intermediateMessage: String? { self._intermediateMessage }
   public override var progress: Int? { min(Int((Double(self._progress) / Double(self.total)) * 100.0), 100) }
   public override var finished: Bool { self._progress >= self.total }
 
   private let _description: String
-  private var _intermediateMessage: String?
 
   private var total: Int
   private var _progress: Int
@@ -584,10 +419,9 @@ public final class ProgressBarTask: ProgressTask, @unchecked Sendable {
     start: Int = 0
   ) {
     self._description = description
-    self._intermediateMessage = intermediateMessage
     self.total = total
     self._progress = start
-    super.init()
+    super.init(intermediateMessage: intermediateMessage)
   }
 
   public func progress(count: Int = 1) {
