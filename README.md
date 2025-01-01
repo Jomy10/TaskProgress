@@ -1,4 +1,13 @@
-# TaskProgress
+<div align="center">
+  <h1>Task Progress</h1>
+  ❰
+  <a href="https://swiftpackageindex.com/Jomy10/TaskProgress/documentation/taskprogress">documentation</a>
+  ❱
+</div><br/>
+<div align="center">
+  <a href="https://swiftpackageindex.com/Jomy10/TaskProgress"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FJomy10%2FTaskProgress%2Fbadge%3Ftype%3Dswift-versions"></img></a>
+  <a href="https://swiftpackageindex.com/Jomy10/TaskProgress"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FJomy10%2FTaskProgress%2Fbadge%3Ftype%3Dplatforms"></img></a>
+</div><br/>
 
 Show progress of multiple tasks in the terminal
 

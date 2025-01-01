@@ -8,7 +8,6 @@ if #available(macOS 13.0, *) {
   main.setMessage("waiting on Logging")
   ProgressIndicators.global.addTask(main)
 
-
   Task {
     try await Task.sleep(for: .seconds(1))
     let loggingTask = ProgressBarTask("Building module Logging", total: 100)
@@ -24,8 +23,13 @@ if #available(macOS 13.0, *) {
     }
     let newTask = ProgressBarTask("Building module Printing", total: 3)
     ProgressIndicators.global.addTask(newTask)
-    for _ in 0..<3 {
+    main.setMessage("waiting on Printing")
+    for i in 0..<3 {
       try await Task.sleep(for: .seconds(2))
+      if i == 2 {
+        newTask.cancel()
+        break
+      }
       newTask.progress()
     }
     main.finish()
