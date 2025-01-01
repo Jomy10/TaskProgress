@@ -20,7 +20,7 @@ public final class ProgressIndicators: @unchecked Sendable {
   public nonisolated(unsafe) static var global = ProgressIndicators()
 
   let lock: NSLock
-  var tasks: [ProgressTask] = []
+  public private(set) var tasks: [ProgressTask] = []
   var screenTask: Task<Void, any Error>?
   var format: ProgressFormat
   public private(set) var finished: Bool {

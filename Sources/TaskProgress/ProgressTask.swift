@@ -200,3 +200,19 @@ public final class ProgressBarTask: ProgressTask, @unchecked Sendable {
     super.finish()
   }
 }
+
+extension ProgressTask: CustomDebugStringConvertible {
+  public var debugDescription: String {
+    let status: String
+    if self.isError {
+      status = "error"
+    } else if self.isCancelled {
+      status = "cancelled"
+    } else if self.finished {
+      status = "finished"
+    } else {
+      status = "running"
+    }
+    return "ProgressTask(\(self.description), status: \(status))"
+  }
+}
